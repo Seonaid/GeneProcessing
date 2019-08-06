@@ -1,0 +1,8 @@
+#BlueJ class context
+comment0.target=WholeProject
+comment0.text=\n\ Write\ a\ description\ of\ WholeProject\ here.\n\ \n\ This\ project\ will\ take\ a\ DNA\ file\ as\ input,\ find\ all\ the\ genes\ in\ the\ file,\ \n\ and\ output\ a\ list\ of\ all\ genes\ with\ more\ than\ a\ specific\ number\ of\ codons,\ \n\ as\ well\ as\ producing\ a\ list\ of\ all\ genes\ with\ a\ high\ CG-ratio\n\ \n\ @author\ (your\ name)\ \n\ @version\ (a\ version\ number\ or\ a\ date)\n
+comment1.params=dna\ startCodon\ stopCodon
+comment1.target=java.lang.String\ findSimpleGene(java.lang.String,\ java.lang.String,\ java.lang.String)
+comment2.params=
+comment2.target=void\ testFindSimpleGene()
+numComments=3
