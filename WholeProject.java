@@ -97,6 +97,10 @@ public class WholeProject {
     }
 
     public int findGeneEnd(String dna, int startIndex, String stopCodon){
+        // Most important: You must add 3 to the index returned to get the END of the stopCodon rather than its beginning
+        // This is necessary for determining when there is no stopCodon at the end of the gene... in that case it will
+        // return the dna length, which indicates that no gene was found.
+        
         String result = "";     
         int stopIndex = dna.toUpperCase().indexOf(stopCodon.toUpperCase(), startIndex);
         while (stopIndex != -1){
@@ -115,6 +119,9 @@ public class WholeProject {
     }    
 
     public void testFindGeneEnd(){
+        // Expected behaviour:
+        // If there is a gene in the provided DNA, findGeneEnd returns the index of the stopCodon
+        // If there is no gene, findGeneEnd returns dna.length();
         System.out.println("\nStart testFindGeneEnd");
         String testDNA = "";
         int testGeneEnd = 0;
@@ -123,8 +130,18 @@ public class WholeProject {
         // Case: startCodon-stopCodon, no intermediate code
         testDNA = "ATGTAA";
         testGeneEnd = findGeneEnd(testDNA, 0, stopCodon);
-        if (testGeneEnd != 6) System.out.println("Short gene with no codons: " + testGeneEnd);        
-           
+        if (testGeneEnd != 3) System.out.println("Short gene with no codons: " + testGeneEnd);
+        
+        // Case: "wrong" stopCodon provided...
+        testDNA = "ATGTAG";
+        testGeneEnd = findGeneEnd(testDNA, 0, stopCodon);
+        if (testGeneEnd != 6) System.out.println("Wrong stop codon provided: " + testGeneEnd);
+        
+        // Case: lowercase, there is a stopCodon, but no gene. Expected dna.length() => 12
+        testDNA = "atgcgtagaccg";
+        testGeneEnd = findGeneEnd(testDNA, 0, "tag");
+        if (testGeneEnd != 12) System.out.println("Stop codon but no gene: " + testGeneEnd);        
+        
         System.out.println("All tests run FindGeneEnd");
     }
     
@@ -140,7 +157,7 @@ public class WholeProject {
         if (startIndex == -1){
             return result;
         }
-
+        // find possible genes ending in each of the stop codons... the shortest one is the gene
         int taaEnd = findGeneEnd(dna, startIndex, "TAA");
         int tagEnd = findGeneEnd(dna, startIndex, "TAG");
         int tgaEnd = findGeneEnd(dna, startIndex, "TGA");
@@ -149,10 +166,10 @@ public class WholeProject {
         shortGene = Math.min(shortGene, tgaEnd);
 
         if (shortGene == dna.length()){
-            return ""; // the stopIndex cannot be the dna length
+            return ""; // the stopIndex cannot be the dna length... no gene found
         }
         
-        return dna.substring(startIndex, shortGene+3);
+        return dna.substring(startIndex, shortGene+3); // return the gene
     }
     
     public void testPickAGene(){
@@ -194,7 +211,7 @@ public class WholeProject {
         while (true) {
             currentGene = pickAGene(dna, startIndex);
             if (currentGene.isEmpty()) break;
-            // if there was a gene, print it
+            // if there was a gene, print it (change this to add it to an iterator intead)
             System.out.println(currentGene);
             // move startIndex to just past the end of the gene
             startIndex = dna.toUpperCase().indexOf(currentGene.toUpperCase(), startIndex) + currentGene.length();
@@ -231,5 +248,80 @@ public class WholeProject {
         
         System.out.println("End testFindAllGenes... all tests run");
     }
+
+    public int howMany(String stringa, String stringb){
+        int num = 0;
+        int startIndex = stringb.indexOf(stringa);
+        //System.out.println(stringa + " in " + stringb);
+        stringa = stringa.toLowerCase();
+        stringb = stringb.toLowerCase();        
+        while (startIndex != -1){
+            num = num+1;
+            startIndex = stringb.indexOf(stringa, startIndex + stringa.length());
+        }
+        return num;
+    } 
     
+    public double cgRatio(String dna){
+        String searchChar = "c";
+        double numCs = howMany(searchChar, dna.toLowerCase());
+        searchChar = "g";
+        double numGs = howMany(searchChar, dna.toLowerCase());
+        
+        return (numCs + numGs)/dna.length();
+    }
+    
+    public int countCTG(String dna){
+        return howMany("ctg", dna.toLowerCase());
+    }
+    
+    public void testCountCTG(){
+        System.out.println("\nStart testCountCTG");
+        String testDNA = "ATGTAAATGTAG";
+        // Case: No ctg returns 0
+        if (0 != countCTG(testDNA)) System.out.println("There is no ctg here: " + countCTG(testDNA));
+        
+        // Case: one ctg lowwer case
+        testDNA = "atgctgatgtag";
+        if (1 != countCTG(testDNA)) System.out.println("Only one ctg, lowercase: " + countCTG(testDNA));        
+        
+        // Case: one CTG upper case
+        testDNA = "ATGTCTGTGTAG";
+        if (1 != countCTG(testDNA)) System.out.println("Only one ctg, uppercase: " + countCTG(testDNA)); 
+        
+        // Case: CTG at beginning
+        testDNA = "CTGTGATAG";
+        if (1 != countCTG(testDNA)) System.out.println("CTG at beginning: " + countCTG(testDNA));
+        
+        // Case: CTG at end
+        testDNA = "AGTTGATAGCTG";
+        if (1 != countCTG(testDNA)) System.out.println("CTG at end: " + countCTG(testDNA));
+        
+        // Case: multiple CTGs
+        testDNA = "AGTTGATAGCTGGATCTGAAACTG";
+        if (3 != countCTG(testDNA)) System.out.println("3x CTG: " + countCTG(testDNA));
+                
+        System.out.println("All testCountCTG tests run");
+    }
+    
+    public void testCgRatio(){
+        System.out.println("\nStart testCgRatio");
+        String testDNA = "ATTTAAATATAA";
+        // Case: No CGs returns 0
+        if (0 != cgRatio(testDNA)) System.out.println("There is no CG here: " + cgRatio(testDNA));
+        
+        // Case: cgRatio less than 0.35 (0.25)
+        testDNA = "aaaaatttttgggggttttt";
+        if (0.25 != cgRatio(testDNA)) System.out.println("1/4 Gs lowercase: " + cgRatio(testDNA));        
+        
+        // Case: one half CGs uppercase (0.5)
+        testDNA = "AAAAATTTTTGGGGGCCCCC";
+        if (0.5 != cgRatio(testDNA)) System.out.println("1/2 CGs, uppercase: " + cgRatio(testDNA)); 
+        
+        // Case: CTG at beginning
+        testDNA = "CTGTGATAG";
+        if ((4.0/9.0) != cgRatio(testDNA)) System.out.println("4/9 ratio: " + cgRatio(testDNA));
+                
+        System.out.println("All testCgRatio tests run");    
+    }
 }
