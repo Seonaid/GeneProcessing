@@ -1,4 +1,4 @@
-
+import edu.duke.*;
 /**
  * Write a description of WholeProject here.
  * 
@@ -13,7 +13,7 @@ public class WholeProject {
     public String findSingleGene(String dna, String startCodon, String stopCodon){
         String result = "";
         int startIndex = dna.toUpperCase().indexOf(startCodon.toUpperCase());
-        int stopIndex = dna.length();
+        int stopIndex = 0;
         
         // If the startCodon is not found in the dna string, there is no gene
         if (startIndex == -1){
@@ -24,13 +24,18 @@ public class WholeProject {
         while (stopIndex != -1){
             // look through the dna string for the next instance of the stopCodon
             // if it occurs, the gene length must be a multiple of three, or it is not a gene
+
             if ((stopIndex - startIndex) % 3 == 0){
                 // the gene is a substring between the two codons
                 result = dna.substring(startIndex, stopIndex+3);
                 return result;
             } else {
+                //System.out.println("startIndex is " + startIndex);
+                //System.out.println("stopIndex is " + stopIndex);
                 // look for another instance of the stop codon further along in the DNA
-                stopIndex = dna.toUpperCase().indexOf(stopCodon.toUpperCase(), stopIndex+1);
+                stopIndex = dna.toUpperCase().indexOf(stopCodon.toUpperCase(), stopIndex+3);
+                //System.out.println("next stopIndex is " + stopIndex);
+                //break;
             }
 
         }
@@ -102,7 +107,7 @@ public class WholeProject {
         // return the dna length, which indicates that no gene was found.
         
         String result = "";     
-        int stopIndex = dna.toUpperCase().indexOf(stopCodon.toUpperCase(), startIndex);
+        int stopIndex = dna.toUpperCase().indexOf(stopCodon.toUpperCase(), startIndex+3);
         while (stopIndex != -1){
             // look through the dna string for the next instance of the stopCodon
             // if it occurs, the gene length must be a multiple of three, or it is not a gene
@@ -141,6 +146,14 @@ public class WholeProject {
         testDNA = "atgcgtagaccg";
         testGeneEnd = findGeneEnd(testDNA, 0, "tag");
         if (testGeneEnd != 12) System.out.println("Stop codon but no gene: " + testGeneEnd);        
+
+        // beginning of brac1:
+        System.out.println("Mentor example");
+        testDNA = "nonCodingDNAxxxMyGeneATGmyGenexTAAxxGeneATGTAACATGTAAATGCendTAATAAnonCodingDNAxTAGxTGA";
+        testGeneEnd = findGeneEnd(testDNA, 0, "taa");
+
+        //System.out.println(pickAGene(testDNA, 0) + " " + testDNA.substring(0, (testGeneEnd + 3)));
+        
         
         System.out.println("All tests run FindGeneEnd");
     }
@@ -158,18 +171,21 @@ public class WholeProject {
             return result;
         }
         // find possible genes ending in each of the stop codons... the shortest one is the gene
-        int taaEnd = findGeneEnd(dna, startIndex, "TAA");
-        int tagEnd = findGeneEnd(dna, startIndex, "TAG");
-        int tgaEnd = findGeneEnd(dna, startIndex, "TGA");
+        int taaIndex = findGeneEnd(dna, startIndex, "TAA");
+        int tagIndex = findGeneEnd(dna, startIndex, "TAG");
+        int tgaIndex = findGeneEnd(dna, startIndex, "TGA");
         
-        int shortGene = Math.min(taaEnd, tagEnd);
-        shortGene = Math.min(shortGene, tgaEnd);
+        int minIndex = Math.min(taaIndex, tagIndex);
+        minIndex = Math.min(minIndex, tgaIndex);
+        
+        // treat very long genes as accidental brackets
+        //if ((minIndex - startIndex) > 500) minIndex = dna.length();
 
-        if (shortGene == dna.length()){
+        if (minIndex == dna.length()){
             return ""; // the stopIndex cannot be the dna length... no gene found
         }
         
-        return dna.substring(startIndex, shortGene+3); // return the gene
+        return dna.substring(startIndex, (minIndex+3)); // return the gene
     }
     
     public void testPickAGene(){
@@ -177,25 +193,33 @@ public class WholeProject {
         String testDNA = "";
         String testGene = "";
 
-        // Case: startCodon-stopCodon, no intermediate code
+        // Case: startCodon-stopCodon, no intermediate code TAA stopCodon
         testDNA = "ATGTAA";
         testGene = pickAGene(testDNA, 0);
         if (!testGene.equals("ATGTAA")) System.out.println("Cannot find basic gene: " + testDNA);
         
-        // Case: startCodon - codon - stopCodon
+        // Case: startCodon - codon - stopCodon TAG stopCodon
         testDNA = "ATGGCATAG";
         testGene = pickAGene(testDNA, 0);
         if (!testGene.equals("ATGGCATAG")) System.out.println("Cannot find three codon gene: " + testDNA);        
         
-        // Case: there is a stop codon but no gene
+        // Case: there is a stop codon but no gene: lowercase
         testDNA = "atgcgtagaccg";
         testGene = pickAGene(testDNA, 0);
         if (!testGene.equals("")) System.out.println("There is no gene here: " + testDNA);
         
-        // Case: find "TGA" ending
+        // Case: stopCodon is "TGA" with trailing codons
         testDNA = "ATG123123123TGAAGA";
         testGene = pickAGene(testDNA, 0);
         if (!testGene.equals("ATG123123123TGA")) System.out.println("Did not find gene: " + testDNA);        
+
+        // beginning of brac1:
+        //System.out.println("Mentor example");
+        testDNA = "nonCodingDNAxxxMyGeneATGmyGenexTAAxxGeneATGTAACATGTAAATGCendTAATAAnonCodingDNAxTAGxTGA";
+        testGene = pickAGene(testDNA, 0);        
+        if (!testGene.equals("ATGmyGenexTAAxxGeneATGTAACATGTAAATGCendTAA")) System.out.println("Did not find gene: " + testDNA);
+        
+        
         
         System.out.println("All PickAGene tests run");
 
@@ -206,17 +230,48 @@ public class WholeProject {
         // Takes an input dna that may contain zero-to-many genes
         // Loops through the dna, starting from the first instance of the startCodon and picking
         // a single gene (using pickAGene)...
-        String currentGene = "";
-        int startIndex = 0;
-        while (true) {
-            currentGene = pickAGene(dna, startIndex);
-            if (currentGene.isEmpty()) break;
-            // if there was a gene, print it (change this to add it to an iterator intead)
-            System.out.println(currentGene);
-            // move startIndex to just past the end of the gene
-            startIndex = dna.toUpperCase().indexOf(currentGene.toUpperCase(), startIndex) + currentGene.length();
-        }
+
+        //System.out.println("First Gene: " + currentGene);
+        int numGenes = 0;
+        int longGenes = 0;
+        int startIndex = dna.toUpperCase().indexOf("ATG");
+        String currentGene = pickAGene(dna, startIndex);
+        int longestGene = 0;
         
+        double cgRatio = 0;
+        int highCgRatios = 0;
+        while (!currentGene.isEmpty()) {
+            numGenes = numGenes + 1;
+            //System.out.println(currentGene);
+            //if (currentGene.length() < 1000){
+            startIndex = dna.toUpperCase().indexOf("ATG", startIndex + currentGene.length());
+            //} else {
+              //  startIndex = dna.toUpperCase().indexOf("ATG", startIndex + 3);
+            //}
+            if (startIndex == -1) break;
+            // if there was a gene, print it (change this to add it to an iterator intead)
+            
+            // move startIndex to just past the end of the gene
+
+            //System.out.println("Moving index to at: " + startIndex);            
+
+            if (currentGene.length() > 60) {
+                longGenes = longGenes + 1;
+                if (currentGene.length() > longestGene) longestGene = currentGene.length();
+                System.out.println(currentGene);
+            }
+            
+            cgRatio = cgRatio(currentGene);
+            if (cgRatio > 0.35) {
+                highCgRatios = highCgRatios + 1;
+            }
+            currentGene = pickAGene(dna, startIndex);                       
+        }
+        System.out.println("Total genes: " + numGenes);
+        System.out.println("Long genes: " + longGenes);
+        System.out.println("High CG Ratios: " + highCgRatios);
+        System.out.println("CTG count: " + countCTG(dna));
+        System.out.println("Longest gene is: "  + longestGene);
         
         // set new dna string to the index that follows the gene we just got back
     }
@@ -246,6 +301,18 @@ public class WholeProject {
         testDNA = "agacaagatg123123123123taggaccagaatg123123123123taaccagaatg123123tgacgaccatag";
         findAllGenes(testDNA);
         
+        //Case: the real gene is shorter than the one that you get to first.
+        System.out.println("There are nested gene possibilities");
+        testDNA = "noiseGoesHereatg123123123123123123tga123123tag123123123taa";
+        findAllGenes(testDNA);
+        
+        // beginning of brac1:
+        System.out.println("Brac beginning");
+        testDNA = "nonCodingDNAxxxMyGeneATGmyGenexTAAxxGeneATGTAACATGTAAATGCendTAATAAnonCodingDNAxTAGxTGA";
+        findAllGenes(testDNA);
+        
+        
+        
         System.out.println("End testFindAllGenes... all tests run");
     }
 
@@ -264,11 +331,12 @@ public class WholeProject {
     
     public double cgRatio(String dna){
         String searchChar = "c";
-        double numCs = howMany(searchChar, dna.toLowerCase());
+        int numCs = howMany(searchChar, dna.toLowerCase());
         searchChar = "g";
-        double numGs = howMany(searchChar, dna.toLowerCase());
+        int numGs = howMany(searchChar, dna.toLowerCase());
+        int numCG = numCs + numGs;
         
-        return (numCs + numGs)/dna.length();
+        return ((double) numCG)/dna.length();
     }
     
     public int countCTG(String dna){
@@ -324,4 +392,18 @@ public class WholeProject {
                 
         System.out.println("All testCgRatio tests run");    
     }
+
+    public void processDNAFile(){
+        FileResource fr = new FileResource("dna/GRch38dnapart.fa");
+        String dna = fr.asString();
+        //System.out.println("The strand is: " + dna);
+        System.out.println("CTG: " + howMany("CTG", dna));
+        //System.out.println("");
+        
+        //String gene = pickAGene(dna, 0);
+        //System.out.println(gene.length());
+        
+        findAllGenes(dna);
+        //processGenes(sr);
+    }    
 }
